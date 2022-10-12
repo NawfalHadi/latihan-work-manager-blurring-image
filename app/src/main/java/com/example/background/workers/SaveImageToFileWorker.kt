@@ -34,9 +34,12 @@ class SaveImageToFileWorker(ctx: Context, params: WorkerParameters) : Worker(ctx
 
             if(!imageUri.isNullOrEmpty()) {
                 val output = workDataOf(KEY_IMAGE_URI to imageUri)
+                Result.success(output)
+            } else {
+                Result.failure()
             }
 
-            Result.success()
+
         } catch (e : Exception) {
             e.printStackTrace()
             Result.failure()

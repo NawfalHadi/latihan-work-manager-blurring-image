@@ -16,9 +16,14 @@
 
 package com.example.background
 
+import android.app.Activity
+import android.content.ContentValues.TAG
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -44,6 +49,7 @@ class BlurActivity : AppCompatActivity() {
         viewModel.outputWorkInfos.observe(this, workInfosObserver())
 
         binding.seeFileButton.setOnClickListener {
+            Toast.makeText(this, viewModel.outputUri.toString(), Toast.LENGTH_SHORT).show()
             viewModel.outputUri?.let { currentUri ->
                 val actionView = Intent(Intent.ACTION_VIEW, currentUri)
                 actionView.resolveActivity(packageManager)?.run {
@@ -51,21 +57,24 @@ class BlurActivity : AppCompatActivity() {
                 }
             }
         }
+
+        binding.cancelButton.setOnClickListener {
+            viewModel.cancelWork()
+        }
     }
+
 
     private fun workInfosObserver(): Observer<List<WorkInfo>> {
         return Observer {
             if (it.isNullOrEmpty()) {
                 return@Observer
             }
-
-
             val workInfo = it[0]
             if (workInfo.state.isFinished) {
                 showWorkFinished()
                 val outputImageUri = workInfo.outputData.getString(KEY_IMAGE_URI)
-
                 if (!outputImageUri.isNullOrEmpty()) {
+                    Log.d(TAG, "workInfosObserver: $outputImageUri")
                     viewModel.setOutputUri(outputImageUri)
                 }
             } else {

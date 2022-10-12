@@ -18,8 +18,10 @@ package com.example.background
 
 import android.app.Application
 import android.content.ContentResolver
+import android.content.ContentValues.TAG
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -27,6 +29,7 @@ import androidx.work.*
 import com.example.background.workers.BlurWorker
 import com.example.background.workers.ClearnUpWorker
 import com.example.background.workers.SaveImageToFileWorker
+import kotlin.math.log
 
 
 class BlurViewModel(application: Application) : ViewModel() {
@@ -40,7 +43,6 @@ class BlurViewModel(application: Application) : ViewModel() {
 
     init {
         imageUri = getImageUri(application.applicationContext)
-
         outputWorkInfos = workRequest.getWorkInfosByTagLiveData(TAG_OUTPUT)
     }
     /**
@@ -77,13 +79,17 @@ class BlurViewModel(application: Application) : ViewModel() {
 //
 //        continuation = continuation.then(blurRequest)
 
-//        val save = OneTimeWorkRequest.Builder(
-//            SaveImageToFileWorker::class.java
-//        ).build()
-
-        val save = OneTimeWorkRequestBuilder<SaveImageToFileWorker>()
-            .addTag(TAG_OUTPUT)
+        val constraint = Constraints.Builder()
+            .setRequiresCharging(true)
             .build()
+
+        val save = OneTimeWorkRequest.Builder(
+            SaveImageToFileWorker::class.java
+        ).setConstraints(constraint).addTag(TAG_OUTPUT).build()
+
+//        val save = OneTimeWorkRequestBuilder<SaveImageToFileWorker>()
+//            .addTag(TAG_OUTPUT)
+//            .build()
 
         continuation = continuation.then(save)
         continuation.enqueue()
@@ -98,6 +104,7 @@ class BlurViewModel(application: Application) : ViewModel() {
 
     private fun uriOrNull(uriString: String?): Uri? {
         return if (!uriString.isNullOrEmpty()) {
+            Log.e(TAG, "uriOrNull: $uriString")
             Uri.parse(uriString)
         } else {
             null
@@ -118,7 +125,9 @@ class BlurViewModel(application: Application) : ViewModel() {
     }
 
     internal fun setOutputUri(outputImageUri: String?) {
+        Log.e(TAG, "uriOrNull: $outputImageUri")
         outputUri = uriOrNull(outputImageUri)
+        Log.e(TAG, "uriOrNull: $outputUri")
     }
 
     private fun createInputDataForUri(): Data {
@@ -128,6 +137,10 @@ class BlurViewModel(application: Application) : ViewModel() {
         }
 
         return builder.build()
+    }
+
+    internal fun cancelWork(){
+        workRequest.cancelUniqueWork(IMAGE_MANIPULATION_WORK_NAME)
     }
 
     class BlurViewModelFactory(private val application: Application) : ViewModelProvider.Factory {
